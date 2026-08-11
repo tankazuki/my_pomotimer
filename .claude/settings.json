@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff format \"$CLAUDE_FILE_PATHS\" 2>nul & npx --no-install prettier --write \"$CLAUDE_FILE_PATHS\" 2>nul & exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd /c if exist backend\\pyproject.toml (cd backend && ruff check . && mypy app)"
+          },
+          {
+            "type": "command",
+            "command": "cmd /c if exist frontend\\package.json (cd frontend && npm run lint --if-present && npm run typecheck --if-present && npm run build --if-present)"
+          }
+        ]
+      }
+    ]
+  }
+}
