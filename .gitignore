@@ -17,3 +17,6 @@ frontend/blob-report/
 
 # 整形フックの "2>nul" が Git Bash 上で生成してしまう空ファイル
 nul
+
+# scripts/dev-start.ps1 が書き出すPIDファイル・ログ
+.dev/
