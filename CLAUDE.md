@@ -8,7 +8,7 @@
   + Tailwind CSS + shadcn/ui
 - データベース: SQLite (開発) → PostgreSQL (デプロイ時に移行予定)
 - ORM: SQLAlchemy 2.x + Alembic (マイグレーション)
-- パッケージ管理: バックエンド = uv、フロントエンド = pnpm
+- パッケージ管理: バックエンド = uv、フロントエンド = npm
 
 ## ディレクトリ構成
 
