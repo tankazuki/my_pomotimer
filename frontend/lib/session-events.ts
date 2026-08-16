@@ -16,3 +16,20 @@ export function subscribeTaskSessionRecorded(listener: Listener): () => void {
 export function notifyTaskSessionRecorded(taskId: string): void {
   for (const listener of listeners) listener(taskId);
 }
+
+/**
+ * タスク紐付けの有無を問わず、セッションが1件記録されたことを通知する。
+ * 用途: 本日の完了ポモドーロ数を表示するフック (use-today-pomodoro-count.ts) の再取得トリガー。
+ */
+type SessionRecordedListener = () => void;
+
+const sessionRecordedListeners = new Set<SessionRecordedListener>();
+
+export function subscribeSessionRecorded(listener: SessionRecordedListener): () => void {
+  sessionRecordedListeners.add(listener);
+  return () => sessionRecordedListeners.delete(listener);
+}
+
+export function notifySessionRecorded(): void {
+  for (const listener of sessionRecordedListeners) listener();
+}

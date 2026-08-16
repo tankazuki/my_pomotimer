@@ -5,6 +5,8 @@
 
 export type SessionType = "WORK" | "SHORT_BREAK" | "LONG_BREAK";
 
+export type TimerPhase = "idle" | "running" | "paused";
+
 export const SESSION_DURATION_MINUTES: Record<SessionType, number> = {
   WORK: 25,
   SHORT_BREAK: 5,
@@ -51,3 +53,25 @@ export const SESSION_TYPE_LABEL_JA: Record<SessionType, string> = {
   SHORT_BREAK: "きゅうけい",
   LONG_BREAK: "ながいきゅうけい",
 };
+
+/**
+ * タイマーの状態に応じたメッセージ文言を返す。RPGテーマ (タイプライター表示) と
+ * ミニマルテーマ (即時表示) の両方から参照される共通ロジック。
+ */
+export function computeTimerMessage(
+  phase: TimerPhase,
+  sessionType: SessionType,
+  activeTaskTitle: string | null,
+): string {
+  if (phase === "running") {
+    return sessionType === "WORK"
+      ? `${activeTaskTitle ?? "しごと"} に しゅうちゅうしている...`
+      : `${SESSION_TYPE_LABEL_JA[sessionType]}中...`;
+  }
+  if (phase === "paused") {
+    return "いちじ ていしちゅう...「たたかう」で さいかいできる。";
+  }
+  return sessionType === "WORK"
+    ? "「たたかう」で しゅうちゅうを はじめよう。"
+    : `「たたかう」で ${SESSION_TYPE_LABEL_JA[sessionType]}に はいろう。`;
+}

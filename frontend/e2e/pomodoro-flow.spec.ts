@@ -25,7 +25,7 @@ test("タスク作成→タイマー開始→テーマ切替→完了でcomplete
   await expect(page.getByText(`しゅうちゅう ・ ${taskTitle}`)).toBeVisible();
 
   await page.getByRole("button", { name: "RPG表示へ" }).click();
-  await expect(page.getByText(`${taskTitle} に ちゅうしんしている...`)).toBeVisible();
+  await expect(page.getByText(`${taskTitle} に しゅうちゅうしている...`)).toBeVisible();
 
   // WORKセッション (25分) を完了させる。runFor だと250ms間隔のtickを6000回近く律儀に処理してしまい
   // 実時間で遅すぎるため、区間内の未発火タイマーを1回だけ処理するfastForwardで一気に進める。

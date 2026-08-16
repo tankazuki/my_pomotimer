@@ -3,6 +3,8 @@
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+import { DQ_BOX } from "@/lib/style-tokens";
+
 const TYPE_INTERVAL_MS = 40;
 
 function TypewriterText({
@@ -42,8 +44,13 @@ export function MessageWindow({ message }: { message: string }) {
   const shouldReduceMotion = useReducedMotion() ?? false;
 
   return (
-    <div className="w-full max-w-sm border-2 border-white bg-black p-3 text-white" aria-live="polite">
+    <div
+      className={`${DQ_BOX} flex min-h-[140px] flex-col justify-between p-4 text-white`}
+      aria-live="polite"
+    >
+      <div className="mb-1 text-xs text-gray-400">{"▼ メッセージ"}</div>
       <TypewriterText key={message} message={message} shouldReduceMotion={shouldReduceMotion} />
+      <div className="text-right text-xs text-gray-400 motion-safe:animate-pulse">{"▼"}</div>
     </div>
   );
 }

@@ -25,7 +25,7 @@ export function AnimatedTime({ remainingMs }: { remainingMs: number }) {
   }, [formatted]);
 
   return (
-    <span ref={spanRef} className="text-6xl font-semibold tabular-nums text-foreground">
+    <span ref={spanRef} className="font-mono text-6xl font-bold tabular-nums text-white md:text-7xl">
       {formatRemaining(remainingMs)}
     </span>
   );

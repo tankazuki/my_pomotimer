@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポモドーロ クエスト & ミニマルタイマー - Dual Theme Pomodoro Timer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: DotGothic16 for Retro & Inter for Modern Minimal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --font-rpg: 'DotGothic16', monospace;
+            --font-minimal: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            user-select: none;
+            transition: background-color 0.5s ease;
+        }
+
+        /* --- Theme 1: DQ Style RPG Box Styles --- */
+        .theme-rpg {
+            font-family: var(--font-rpg);
+        }
+
+        .dq-box {
+            background-color: #000000;
+            border: 4px solid #ffffff;
+            box-shadow: 0 0 0 4px #000000, 0 0 0 8px #ffffff;
+            border-radius: 0;
+            position: relative;
+        }
+
+        .dq-box-sm {
+            background-color: #000000;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px #000000, 0 0 0 4px #ffffff;
+            border-radius: 0;
+        }
+
+        .cursor-pointer-pixel {
+            cursor: pointer;
+        }
+
+        .cursor-pointer-pixel:hover .pixel-arrow {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        .animate-pixel-blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes hero-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .animate-hero {
+            animation: hero-bounce 1.2s ease-in-out infinite;
+        }
+
+        /* --- Theme 2: Minimal Glassmorphism & High-Animation Styles --- */
+        .theme-minimal {
+            font-family: var(--font-minimal);
+            background: radial-gradient(circle at 50% 20%, #1a1c29 0%, #0a0b10 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            transition: all 0.25s ease;
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .glass-button:active {
+            transform: translateY(0);
+        }
+
+        /* SVG Circular Progress Ring Animation */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Glowing Pulse FX for Active Timer in Minimal Theme */
+        @keyframes glowing-orange {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.4)); }
+            50% { filter: drop-shadow(0 0 28px rgba(249, 115, 22, 0.75)); }
+        }
+
+        .timer-glow-active {
+            animation: glowing-orange 3s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body id="appBody" class="min-h-screen p-4 md:p-8 flex flex-col justify-between items-center selection:bg-orange-500 selection:text-white theme-rpg">
+
+    <!-- Universal Header Controls (Theme Independent) -->
+    <header class="w-full max-w-5xl mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 transition-all duration-300">
+        <!-- App Title / Mode Badge -->
+        <div id="headerTitleContainer" class="dq-box-sm px-4 py-2 text-center sm:text-left bg-black transition-all duration-300">
+            <h1 id="appTitle" class="text-xl md:text-2xl font-bold tracking-widest text-yellow-300">
+                ⚔️ ポモドーロ クエスト ⚔️
+            </h1>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+            <button id="soundToggleBtn" onclick="toggleSound()" class="dq-box-sm px-3 py-1.5 text-xs md:text-sm hover:bg-white hover:text-black transition-all">
+                🔊 おと: ON
+            </button>
+            <button id="exportBtn" onclick="exportData()" class="dq-box-sm px-3 py-1.5 text-xs md:text-sm hover:bg-white hover:text-black transition-all">
+                💾 データをほぞん
+            </button>
+            <!-- Theme Switch Button -->
+            <button id="themeSwitchBtn" onclick="switchTheme()" class="dq-box-sm px-4 py-1.5 text-xs md:text-sm bg-yellow-400 text-black hover:bg-yellow-300 font-bold transition-all transform active:scale-95 shadow-lg">
+                🔄 テーマきりかえ
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== THEME 1: DOT RPG VIEW ==================== -->
+    <main id="rpgThemeView" class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-grow">
+        
+        <!-- Left Column: Hero Status & Monster / Character View -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+            <!-- Hero Status Window -->
+            <div class="dq-box p-4">
+                <div class="border-b-2 border-white pb-2 mb-3 flex justify-between items-center">
+                    <span class="text-lg text-yellow-300">ステータス</span>
+                    <span class="text-xs text-gray-400" id="guestIdDisplayRpg">ID: GUEST</span>
+                </div>
+                
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 dq-box-sm flex items-center justify-center bg-gray-900 animate-hero">
+                        <svg class="w-12 h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 2h10v2H7V2zm-2 4h14v2H5V6zm0 4h14v2H5v-2zm2 4h10v2H7v-2zm-2 4h14v2H5v-2zm2 4h10v2H7v-2z"/>
+                            <circle cx="9" cy="8" r="1.5" fill="#eab308"/>
+                            <circle cx="15" cy="8" r="1.5" fill="#eab308"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-xl">ゆうしゃ (Lv.<span class="userLevelDisplay">1</span>)</div>
+                        <div class="text-sm text-gray-300 mt-1">しゅうちゅうりょく: <span class="text-green-400">MAX</span></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>きょうの ポモドーロ:</span>
+                        <span class="todayPomodoroCountDisplay text-yellow-300 font-bold">🍅 x 0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>ぜんたいの ポモドーロ:</span>
+                        <span class="totalPomodoroCountDisplay text-yellow-300 font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Log Window (DQ Style Text Box) -->
+            <div class="dq-box p-4 min-h-[140px] flex flex-col justify-between">
+                <div class="text-xs text-gray-400 mb-1">▼ メッセージ</div>
+                <div id="messageTextRpg" class="text-base md:text-lg leading-relaxed text-yellow-100 min-h-[60px]">
+                    じゅんび は いいか？ たすく を えらんで 「たたかう」 を おせ！
+                </div>
+                <div class="text-right text-xs text-gray-400 animate-pixel-blink">▼</div>
+            </div>
+        </section>
+
+        <!-- Center Column: Pomodoro Timer & Commands -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            <div class="dq-box p-6 text-center">
+                <!-- Mode Selector -->
+                <div class="flex justify-center gap-2 mb-6 text-sm">
+                    <button id="rpgModeWorkBtn" onclick="setTimerMode('WORK')" class="dq-box-sm px-3 py-1 bg-white text-black font-bold">
+                        さぎょう (25ふん)
+                    </button>
+                    <button id="rpgModeShortBtn" onclick="setTimerMode('SHORT_BREAK')" class="dq-box-sm px-3 py-1 text-gray-300">
+                        きゅうけい (5ふん)
+                    </button>
+                    <button id="rpgModeLongBtn" onclick="setTimerMode('LONG_BREAK')" class="dq-box-sm px-3 py-1 text-gray-300">
+                        ちょうきゅうけい (15ふん)
+                    </button>
+                </div>
+
+                <!-- Timer Countdown Display -->
+                <div class="dq-box p-6 mb-6 bg-black">
+                    <div id="rpgTimerDisplay" class="text-6xl md:text-7xl font-bold tracking-widest text-white">
+                        25:00
+                    </div>
+                    <div class="activeTaskDisplay mt-4 text-sm text-yellow-300 truncate">
+                        選択中: たすくが えらばれていません
+                    </div>
+                </div>
+
+                <!-- RPG Battle Commands -->
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <button id="rpgStartBtn" onclick="startTimer()" class="dq-box-sm p-3 flex items-center gap-2 hover:bg-white hover:text-black transition-colors cursor-pointer-pixel group">
+                        <span class="pixel-arrow text-yellow-400 group-hover:text-black">▶</span>
+                        <div>
+                            <div class="font-bold text-base">たたかう</div>
+                            <div class="text-xs text-gray-400 group-hover:text-gray-800">タイマー かいし</div>
+                        </div>
+                    </button>
+
+                    <button id="rpgPauseBtn" onclick="pauseTimer()" class="dq-box-sm p-3 flex items-center gap-2 hover:bg-white hover:text-black transition-colors cursor-pointer-pixel group opacity-50" disabled>
+                        <span class="pixel-arrow opacity-0 text-yellow-400 group-hover:text-black">▶</span>
+                        <div>
+                            <div class="font-bold text-base">ぼうぎょ</div>
+                            <div class="text-xs text-gray-400 group-hover:text-gray-800">いちじ ていし</div>
+                        </div>
+                    </button>
+
+                    <button id="rpgResetBtn" onclick="resetTimer()" class="dq-box-sm p-3 flex items-center gap-2 hover:bg-white hover:text-black transition-colors cursor-pointer-pixel group">
+                        <span class="pixel-arrow opacity-0 text-yellow-400 group-hover:text-black">▶</span>
+                        <div>
+                            <div class="font-bold text-base">にげる</div>
+                            <div class="text-xs text-gray-400 group-hover:text-gray-800">リセット</div>
+                        </div>
+                    </button>
+
+                    <button id="rpgSkipBtn" onclick="skipTimer()" class="dq-box-sm p-3 flex items-center gap-2 hover:bg-white hover:text-black transition-colors cursor-pointer-pixel group">
+                        <span class="pixel-arrow opacity-0 text-yellow-400 group-hover:text-black">▶</span>
+                        <div>
+                            <div class="font-bold text-base">じゅもん</div>
+                            <div class="text-xs text-gray-400 group-hover:text-gray-800">スキップ</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Task List (Quests) -->
+        <section class="lg:col-span-3 flex flex-col gap-6">
+            <div class="dq-box p-4 h-full flex flex-col">
+                <div class="border-b-2 border-white pb-2 mb-4 flex justify-between items-center">
+                    <span class="text-lg text-yellow-300">クエスト (たすく)</span>
+                </div>
+
+                <!-- Add Task Form -->
+                <form onsubmit="handleAddTask(event)" class="mb-4 flex flex-col gap-2">
+                    <input type="text" class="taskTitleInput dq-box-sm p-2 bg-black text-white text-sm focus:outline-none focus:border-yellow-300 placeholder-gray-500" placeholder="あたらしいたすく..." required>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-400 whitespace-nowrap">よそう 🍅:</label>
+                        <input type="number" min="1" max="10" value="1" class="taskEstInput dq-box-sm p-1 bg-black text-white text-sm w-16 text-center focus:outline-none">
+                        <button type="submit" class="dq-box-sm px-3 py-1 bg-white text-black hover:bg-yellow-300 text-sm font-bold flex-grow">
+                            ＋ ついか
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Task Items Scrollable List -->
+                <div id="rpgTaskList" class="space-y-3 overflow-y-auto max-h-[320px] pr-1 flex-grow">
+                    <!-- Dynamic tasks inserted here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- ==================== THEME 2: MINIMAL HIGH-ANIMATION VIEW ==================== -->
+    <main id="minimalThemeView" class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start flex-grow hidden">
+        
+        <!-- Left Column: Tasks & Active Focus Target -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+            <!-- Active Task Status Panel -->
+            <div class="glass-card p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute -right-8 -top-8 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-semibold uppercase tracking-widest text-orange-400">Current Task Focus</span>
+                        <span class="text-xs text-gray-400 font-mono" id="guestIdDisplayMinimal">ID: GUEST</span>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h2 class="activeTaskDisplay text-xl font-bold text-white tracking-tight truncate">
+                            タスクを選択してください
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1 flex items-center gap-2">
+                            <span>Level <span class="userLevelDisplay font-bold text-orange-400">1</span> Focus Hero</span>
+                            <span>•</span>
+                            <span class="text-emerald-400 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active Mode
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Minimal Dynamic Feedback Window -->
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-md transition-all duration-300">
+                    <div class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">Status Notification</div>
+                    <div id="messageTextMinimal" class="text-sm font-medium text-gray-200 min-h-[40px] flex items-center">
+                        タスクを開始してポモドーロセッションを始めましょう。
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task List Component -->
+            <div class="glass-card p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-semibold text-white tracking-wide">Tasks & Quests</h3>
+                    <span class="text-xs text-gray-400" id="minimalTaskCount">0 items</span>
+                </div>
+
+                <!-- Add Task Form Minimal -->
+                <form onsubmit="handleAddTask(event)" class="mb-5 flex flex-col gap-2">
+                    <div class="relative">
+                        <input type="text" class="taskTitleInput w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all" placeholder="New task title..." required>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                            <span class="text-xs text-gray-400">Est. 🍅:</span>
+                            <input type="number" min="1" max="10" value="1" class="taskEstInput bg-transparent text-white text-xs w-8 text-center focus:outline-none">
+                        </div>
+                        <button type="submit" class="glass-button rounded-xl px-4 py-2 text-xs font-semibold text-white hover:bg-orange-500 hover:border-orange-400 flex-grow transition-all">
+                            + Add Task
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Scrollable Minimal Task List -->
+                <div id="minimalTaskList" class="space-y-2.5 overflow-y-auto max-h-[280px] pr-1 flex-grow">
+                    <!-- Dynamic Minimal Task Items Inserted Here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Center/Right Column: SVG Circular Timer & Modern Controls -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+            <div class="glass-card p-8 flex flex-col items-center justify-center relative min-h-[480px]">
+                
+                <!-- Background Ambient Glow -->
+                <div class="absolute w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <!-- Modern Mode Pill Switcher -->
+                <div class="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 mb-8 z-10">
+                    <button id="minimalModeWorkBtn" onclick="setTimerMode('WORK')" class="px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 bg-orange-500 text-white shadow-lg shadow-orange-500/30">
+                        Work (25m)
+                    </button>
+                    <button id="minimalModeShortBtn" onclick="setTimerMode('SHORT_BREAK')" class="px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 text-gray-400 hover:text-white">
+                        Short Break (5m)
+                    </button>
+                    <button id="minimalModeLongBtn" onclick="setTimerMode('LONG_BREAK')" class="px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 text-gray-400 hover:text-white">
+                        Long Break (15m)
+                    </button>
+                </div>
+
+                <!-- SVG Smooth Progress Ring & Digital Clock -->
+                <div class="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center my-2 z-10">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
+                        <!-- Background Circle -->
+                        <circle
+                            cx="140"
+                            cy="140"
+                            r="120"
+                            stroke="rgba(255, 255, 255, 0.05)"
+                            stroke-width="12"
+                            fill="transparent"
+                        />
+                        <!-- Animated Progress Ring -->
+                        <circle
+                            id="svgProgressCircle"
+                            class="progress-ring__circle timer-glow-active"
+                            cx="140"
+                            cy="140"
+                            r="120"
+                            stroke="#f97316"
+                            stroke-width="12"
+                            stroke-linecap="round"
+                            fill="transparent"
+                            stroke-dasharray="753.98"
+                            stroke-dashoffset="0"
+                        />
+                    </svg>
+
+                    <!-- Center Display Text -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span id="minimalTimerDisplay" class="text-6xl md:text-7xl font-bold tracking-tight text-white font-mono">
+                            25:00
+                        </span>
+                        <span id="minimalTimerModeText" class="text-xs uppercase tracking-widest text-orange-400 mt-2 font-semibold">
+                            Focus Session
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Modern Controls Glass Bar -->
+                <div class="flex items-center gap-4 mt-8 z-10 flex-wrap justify-center">
+                    <button id="minimalStartBtn" onclick="startTimer()" class="glass-button px-8 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 shadow-xl shadow-orange-500/20 hover:shadow-orange-500/40 border-none transition-all duration-300 flex items-center gap-2">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <span>Start Session</span>
+                    </button>
+
+                    <button id="minimalPauseBtn" onclick="pauseTimer()" class="glass-button px-6 py-3.5 rounded-2xl font-semibold text-sm text-gray-300 opacity-50 cursor-not-allowed flex items-center gap-2" disabled>
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        <span>Pause</span>
+                    </button>
+
+                    <button id="minimalResetBtn" onclick="resetTimer()" class="glass-button px-5 py-3.5 rounded-2xl font-medium text-sm text-gray-400 hover:text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Reset</span>
+                    </button>
+
+                    <button id="minimalSkipBtn" onclick="skipTimer()" class="glass-button px-5 py-3.5 rounded-2xl font-medium text-sm text-gray-400 hover:text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                        <span>Skip</span>
+                    </button>
+                </div>
+
+                <!-- Footer Modern Stats Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 w-full mt-8 pt-6 border-t border-white/5">
+                    <div class="bg-white/5 rounded-xl p-3.5 border border-white/5 text-center">
+                        <div class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Today Pomodoros</div>
+                        <div class="text-xl font-bold text-orange-400 mt-1 todayPomodoroCountDisplay">🍅 x 0</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3.5 border border-white/5 text-center">
+                        <div class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Total Completed</div>
+                        <div class="text-xl font-bold text-white mt-1 totalPomodoroCountDisplay">0</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3.5 border border-white/5 text-center col-span-2 md:col-span-1">
+                        <div class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Focus Rank</div>
+                        <div class="text-xl font-bold text-emerald-400 mt-1">Lv. <span class="userLevelDisplay">1</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+
+    <!-- Footer Status Bar -->
+    <footer class="w-full max-w-5xl mt-6 text-center text-xs text-gray-400">
+        <div id="footerBox" class="dq-box-sm py-2 px-4 inline-block transition-all">
+            モード: ゲスト | データは LocalStorage に保存されています
+        </div>
+    </footer>
+
+    <script>
+        // Global App State (Shared seamlessly between both themes)
+        let state = {
+            currentTheme: 'rpg', // 'rpg' or 'minimal'
+            guestId: '',
+            timerMode: 'WORK', // WORK, SHORT_BREAK, LONG_BREAK
+            timerState: 'IDLE', // IDLE, RUNNING, PAUSED
+            timeLeft: 25 * 60, // seconds
+            totalDuration: 25 * 60,
+            targetEndTime: null,
+            intervalId: null,
+            soundEnabled: true,
+            activeTaskId: null,
+            tasks: [],
+            sessions: [],
+            totalPomodoros: 0
+        };
+
+        const TIMER_CONFIGS = {
+            WORK: { duration: 25 * 60, label: 'さぎょう', minimalLabel: 'Focus Session' },
+            SHORT_BREAK: { duration: 5 * 60, label: 'きゅうけい', minimalLabel: 'Short Break' },
+            LONG_BREAK: { duration: 15 * 60, label: 'ちょうきゅうけい', minimalLabel: 'Long Break' }
+        };
+
+        const CIRCLE_RADIUS = 120;
+        const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS; // 753.98
+
+        // Web Audio API for 8bit Sound Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                const now = audioCtx.currentTime;
+                if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = state.currentTheme === 'rpg' ? 'square' : 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(880, now + 0.04);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'complete') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.type = state.currentTheme === 'rpg' ? 'square' : 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.connect(noteGain);
+                        noteGain.gain.setValueAtTime(0.12, now + idx * 0.12);
+                        noteGain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.2);
+                        noteOsc.start(now + idx * 0.12);
+                        noteOsc.stop(now + idx * 0.12 + 0.2);
+                    });
+                }
+            } catch (e) {
+                console.error("Audio error", e);
+            }
+        }
+
+        function initGuestUser() {
+            let gid = localStorage.getItem('pomodoro_guest_id');
+            if (!gid) {
+                gid = 'guest_' + Math.random().toString(36).substring(2, 11);
+                localStorage.setItem('pomodoro_guest_id', gid);
+            }
+            state.guestId = gid;
+            document.getElementById('guestIdDisplayRpg').innerText = `ID: ${gid.substring(0, 8)}`;
+            document.getElementById('guestIdDisplayMinimal').innerText = `ID: ${gid.substring(0, 8)}`;
+            
+            // Load theme preference if stored
+            const savedTheme = localStorage.getItem('pomodoro_theme');
+            if (savedTheme && (savedTheme === 'rpg' || savedTheme === 'minimal')) {
+                state.currentTheme = savedTheme;
+            }
+
+            loadLocalData();
+            applyThemeStyle();
+        }
+
+        function loadLocalData() {
+            const savedTasks = localStorage.getItem(`pomodoro_tasks_${state.guestId}`);
+            if (savedTasks) {
+                state.tasks = JSON.parse(savedTasks);
+            } else {
+                state.tasks = [
+                    { id: '1', title: '要件定義とコンポーネント設計', estimated: 3, completed: 1, isCompleted: false },
+                    { id: '2', title: 'FastAPIバックエンド実装', estimated: 2, completed: 0, isCompleted: false }
+                ];
+            }
+
+            const savedSessions = localStorage.getItem(`pomodoro_sessions_${state.guestId}`);
+            if (savedSessions) {
+                state.sessions = JSON.parse(savedSessions);
+            }
+
+            state.totalPomodoros = state.tasks.reduce((sum, t) => sum + (t.completed || 0), 0);
+            
+            const active = state.tasks.find(t => !t.isCompleted);
+            if (active) state.activeTaskId = active.id;
+
+            renderTasks();
+            updateStatsDisplay();
+            updateTimerDisplay();
+        }
+
+        function saveData() {
+            localStorage.setItem(`pomodoro_tasks_${state.guestId}`, JSON.stringify(state.tasks));
+            localStorage.setItem(`pomodoro_sessions_${state.guestId}`, JSON.stringify(state.sessions));
+        }
+
+        function switchTheme() {
+            playSound('click');
+            state.currentTheme = state.currentTheme === 'rpg' ? 'minimal' : 'rpg';
+            localStorage.setItem('pomodoro_theme', state.currentTheme);
+            applyThemeStyle();
+        }
+
+        function applyThemeStyle() {
+            const body = document.getElementById('appBody');
+            const rpgView = document.getElementById('rpgThemeView');
+            const minimalView = document.getElementById('minimalThemeView');
+            const titleContainer = document.getElementById('headerTitleContainer');
+            const appTitle = document.getElementById('appTitle');
+            const themeBtn = document.getElementById('themeSwitchBtn');
+            const soundBtn = document.getElementById('soundToggleBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const footerBox = document.getElementById('footerBox');
+
+            if (state.currentTheme === 'minimal') {
+                body.className = "min-h-screen p-4 md:p-8 flex flex-col justify-between items-center selection:bg-orange-500 selection:text-white theme-minimal";
+                rpgView.classList.add('hidden');
+                minimalView.classList.remove('hidden');
+
+                titleContainer.className = "glass-card px-5 py-2.5 text-center sm:text-left border-white/10";
+                appTitle.className = "text-xl md:text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300";
+                appTitle.innerText = "✨ POMODORO FOCUS";
+
+                themeBtn.className = "glass-button px-4 py-2 text-xs md:text-sm font-semibold rounded-xl text-white bg-orange-500/20 border-orange-500/40 hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-orange-500/10";
+                themeBtn.innerText = "👾 Switch to RPG Theme";
+
+                soundBtn.className = "glass-button px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl text-gray-300 hover:text-white";
+                exportBtn.className = "glass-button px-3.5 py-2 text-xs md:text-sm font-medium rounded-xl text-gray-300 hover:text-white";
+                footerBox.className = "glass-card py-2 px-5 inline-block text-gray-400 rounded-xl border-white/5";
+            } else {
+                body.className = "min-h-screen p-4 md:p-8 flex flex-col justify-between items-center selection:bg-white selection:text-black theme-rpg";
+                minimalView.classList.add('hidden');
+                rpgView.classList.remove('hidden');
+
+                titleContainer.className = "dq-box-sm px-4 py-2 text-center sm:text-left bg-black";
+                appTitle.className = "text-xl md:text-2xl font-bold tracking-widest text-yellow-300";
+                appTitle.innerText = "⚔️ ポモドーロ クエスト ⚔️";
+
+                themeBtn.className = "dq-box-sm px-4 py-1.5 text-xs md:text-sm bg-yellow-400 text-black hover:bg-yellow-300 font-bold transition-all";
+                themeBtn.innerText = "✨ テーマきりかえ";
+
+                soundBtn.className = "dq-box-sm px-3 py-1.5 text-xs md:text-sm hover:bg-white hover:text-black transition-all";
+                exportBtn.className = "dq-box-sm px-3 py-1.5 text-xs md:text-sm hover:bg-white hover:text-black transition-all";
+                footerBox.className = "dq-box-sm py-2 px-4 inline-block";
+            }
+
+            // Sync timer and tasks state visually to new theme
+            updateTimerDisplay();
+            renderTasks();
+            updateStatsDisplay();
+            updateMessage(state.currentTheme === 'rpg' ? "テーマ を きりかえた！ ぼうけん を つづけよう！" : "Theme switched smoothly. Keep going!");
+        }
+
+        let typeWriterTimeout = null;
+        function updateMessage(text) {
+            const elRpg = document.getElementById('messageTextRpg');
+            const elMinimal = document.getElementById('messageTextMinimal');
+            
+            elMinimal.innerText = text;
+
+            elRpg.innerText = '';
+            let i = 0;
+            if (typeWriterTimeout) clearTimeout(typeWriterTimeout);
+
+            function typeNextChar() {
+                if (i < text.length) {
+                    elRpg.innerText += text.charAt(i);
+                    i++;
+                    typeWriterTimeout = setTimeout(typeNextChar, 25);
+                }
+            }
+            typeNextChar();
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateTimerDisplay() {
+            const formatted = formatTime(state.timeLeft);
+            document.getElementById('rpgTimerDisplay').innerText = formatted;
+            document.getElementById('minimalTimerDisplay').innerText = formatted;
+
+            // Update SVG Progress Ring in Minimal View
+            const circle = document.getElementById('svgProgressCircle');
+            if (circle) {
+                const fraction = state.timeLeft / state.totalDuration;
+                const offset = CIRCLE_CIRCUMFERENCE - (fraction * CIRCLE_CIRCUMFERENCE);
+                circle.style.strokeDasharray = `${CIRCLE_CIRCUMFERENCE} ${CIRCLE_CIRCUMFERENCE}`;
+                circle.style.strokeDashoffset = offset;
+            }
+        }
+
+        function setTimerMode(mode) {
+            if (state.timerState === 'RUNNING') return;
+            playSound('click');
+            state.timerMode = mode;
+            state.timeLeft = TIMER_CONFIGS[mode].duration;
+            state.totalDuration = TIMER_CONFIGS[mode].duration;
+            
+            // Highlight buttons RPG Theme
+            ['WORK', 'SHORT_BREAK', 'LONG_BREAK'].forEach(m => {
+                const rpgBtn = document.getElementById(m === 'WORK' ? 'rpgModeWorkBtn' : m === 'SHORT_BREAK' ? 'rpgModeShortBtn' : 'rpgModeLongBtn');
+                if (rpgBtn) {
+                    rpgBtn.className = m === mode ? "dq-box-sm px-3 py-1 bg-white text-black font-bold" : "dq-box-sm px-3 py-1 text-gray-300";
+                }
+
+                const minBtn = document.getElementById(m === 'WORK' ? 'minimalModeWorkBtn' : m === 'SHORT_BREAK' ? 'minimalModeShortBtn' : 'minimalModeLongBtn');
+                if (minBtn) {
+                    minBtn.className = m === mode 
+                        ? "px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 bg-orange-500 text-white shadow-lg shadow-orange-500/30"
+                        : "px-5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 text-gray-400 hover:text-white";
+                }
+            });
+
+            document.getElementById('minimalTimerModeText').innerText = TIMER_CONFIGS[mode].minimalLabel;
+
+            updateTimerDisplay();
+            updateMessage(`モード を 「${TIMER_CONFIGS[mode].label}」 に へんこう した！`);
+        }
+
+        function startTimer() {
+            if (state.timerState === 'RUNNING') return;
+            playSound('click');
+
+            state.timerState = 'RUNNING';
+            state.targetEndTime = Date.now() + state.timeLeft * 1000;
+
+            // UI Button states
+            setButtonStateRunning(true);
+
+            const activeTask = state.tasks.find(t => t.id === state.activeTaskId);
+            const taskName = activeTask ? activeTask.title : 'たすく なし';
+            
+            if (state.timerMode === 'WORK') {
+                updateMessage(`ゆうしゃ は タスク「${taskName}」 に とりかかった！ しゅうちゅう して たたかえ！`);
+            } else {
+                updateMessage(`やすみ 時間だ！ しっかり からだ を やすめよう。`);
+            }
+
+            state.intervalId = setInterval(() => {
+                const remainingMs = state.targetEndTime - Date.now();
+                if (remainingMs <= 0) {
+                    handleTimerComplete();
+                } else {
+                    state.timeLeft = Math.ceil(remainingMs / 1000);
+                    updateTimerDisplay();
+                }
+            }, 250);
+        }
+
+        function pauseTimer() {
+            if (state.timerState !== 'RUNNING') return;
+            playSound('click');
+            
+            clearInterval(state.intervalId);
+            state.timerState = 'PAUSED';
+
+            setButtonStateRunning(false);
+            updateMessage(`タイマー を いちじていし した。`);
+        }
+
+        function resetTimer() {
+            playSound('click');
+            clearInterval(state.intervalId);
+            state.timerState = 'IDLE';
+            state.timeLeft = TIMER_CONFIGS[state.timerMode].duration;
+
+            setButtonStateRunning(false);
+            updateTimerDisplay();
+            updateMessage(`タイマー を リセット した！`);
+        }
+
+        function skipTimer() {
+            playSound('click');
+            if (state.timerState === 'RUNNING') {
+                clearInterval(state.intervalId);
+            }
+            handleTimerComplete(true);
+        }
+
+        function setButtonStateRunning(isRunning) {
+            const rpgStart = document.getElementById('rpgStartBtn');
+            const rpgPause = document.getElementById('rpgPauseBtn');
+            const minStart = document.getElementById('minimalStartBtn');
+            const minPause = document.getElementById('minimalPauseBtn');
+
+            if (isRunning) {
+                rpgStart.classList.add('opacity-50');
+                rpgPause.classList.remove('opacity-50');
+                rpgPause.disabled = false;
+
+                minStart.classList.add('opacity-50', 'cursor-not-allowed');
+                minPause.classList.remove('opacity-50', 'cursor-not-allowed');
+                minPause.disabled = false;
+            } else {
+                rpgStart.classList.remove('opacity-50');
+                rpgPause.classList.add('opacity-50');
+                rpgPause.disabled = true;
+
+                minStart.classList.remove('opacity-50', 'cursor-not-allowed');
+                minPause.classList.add('opacity-50', 'cursor-not-allowed');
+                minPause.disabled = true;
+            }
+        }
+
+        function handleTimerComplete(isSkipped = false) {
+            clearInterval(state.intervalId);
+            state.timerState = 'IDLE';
+
+            if (!isSkipped) {
+                playSound('complete');
+
+                const newSession = {
+                    id: 'session_' + Date.now(),
+                    taskId: state.activeTaskId,
+                    mode: state.timerMode,
+                    duration: TIMER_CONFIGS[state.timerMode].duration / 60,
+                    completedAt: new Date().toISOString()
+                };
+                state.sessions.push(newSession);
+
+                if (state.timerMode === 'WORK') {
+                    if (state.activeTaskId) {
+                        const task = state.tasks.find(t => t.id === state.activeTaskId);
+                        if (task) {
+                            task.completed = (task.completed || 0) + 1;
+                            if (task.completed >= task.estimated) {
+                                task.isCompleted = true;
+                            }
+                        }
+                    }
+                    state.totalPomodoros++;
+                    updateMessage(`🎉 けいけんち を かくとく！ ポモドーロ が かんりょう した！`);
+                } else {
+                    updateMessage(`きゅうけい じかん が おわった！ さぎょう に もどろう！`);
+                }
+
+                saveData();
+                renderTasks();
+                updateStatsDisplay();
+
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("ポモドーロ クエスト", {
+                        body: `${TIMER_CONFIGS[state.timerMode].label} が しゅうりょう しました！`,
+                    });
+                }
+            } else {
+                updateMessage(`タイマー を スキップ した。`);
+            }
+
+            if (state.timerMode === 'WORK') {
+                setTimerMode('SHORT_BREAK');
+            } else {
+                setTimerMode('WORK');
+            }
+
+            setButtonStateRunning(false);
+        }
+
+        function handleAddTask(e) {
+            e.preventDefault();
+            playSound('click');
+
+            const form = e.target;
+            const titleInput = form.querySelector('.taskTitleInput');
+            const estInput = form.querySelector('.taskEstInput');
+
+            const title = titleInput.value.trim();
+            const estimated = parseInt(estInput.value, 10) || 1;
+
+            if (!title) return;
+
+            const newTask = {
+                id: 'task_' + Date.now(),
+                title: title,
+                estimated: estimated,
+                completed: 0,
+                isCompleted: false
+            };
+
+            state.tasks.push(newTask);
+            if (!state.activeTaskId) {
+                state.activeTaskId = newTask.id;
+            }
+
+            // Sync all forms
+            document.querySelectorAll('.taskTitleInput').forEach(i => i.value = '');
+            document.querySelectorAll('.taskEstInput').forEach(i => i.value = '1');
+
+            saveData();
+            renderTasks();
+            updateMessage(`あたらしいたすく 「${title}」 を ついかした！`);
+        }
+
+        function selectTask(taskId) {
+            playSound('click');
+            state.activeTaskId = taskId;
+            renderTasks();
+            
+            const task = state.tasks.find(t => t.id === taskId);
+            if (task) {
+                updateMessage(`アクティブたすく を 「${task.title}」 に しんこう した！`);
+            }
+        }
+
+        function toggleTaskComplete(taskId, e) {
+            e.stopPropagation();
+            playSound('click');
+            const task = state.tasks.find(t => t.id === taskId);
+            if (task) {
+                task.isCompleted = !task.isCompleted;
+                saveData();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(taskId, e) {
+            e.stopPropagation();
+            playSound('click');
+            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            if (state.activeTaskId === taskId) {
+                const remaining = state.tasks.find(t => !t.isCompleted);
+                state.activeTaskId = remaining ? remaining.id : null;
+            }
+            saveData();
+            renderTasks();
+            updateMessage(`たすく を さくじょ した。`);
+        }
+
+        function renderTasks() {
+            // Render RPG List
+            const rpgContainer = document.getElementById('rpgTaskList');
+            rpgContainer.innerHTML = '';
+
+            // Render Minimal List
+            const minContainer = document.getElementById('minimalTaskList');
+            minContainer.innerHTML = '';
+
+            document.getElementById('minimalTaskCount').innerText = `${state.tasks.length} items`;
+
+            const activeTask = state.tasks.find(t => t.id === state.activeTaskId);
+            const activeText = activeTask 
+                ? `選択中: ${activeTask.title} (${activeTask.completed}/${activeTask.estimated} 🍅)`
+                : "選択中: たすくが えらばれていません";
+            
+            document.querySelectorAll('.activeTaskDisplay').forEach(el => {
+                el.innerText = activeTask ? activeTask.title : "タスクを選択してください";
+            });
+
+            if (state.tasks.length === 0) {
+                rpgContainer.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">たすく が ありません</div>`;
+                minContainer.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">No tasks found</div>`;
+                return;
+            }
+
+            state.tasks.forEach(task => {
+                const isActive = task.id === state.activeTaskId;
+
+                // RPG Item HTML
+                const rpgDiv = document.createElement('div');
+                rpgDiv.className = `dq-box-sm p-2 cursor-pointer transition-colors text-xs ${
+                    isActive ? 'bg-white text-black font-bold' : 'bg-black text-white hover:bg-gray-900'
+                }`;
+                rpgDiv.onclick = () => selectTask(task.id);
+                const tomats = '🍅'.repeat(task.completed || 0) + '⚪'.repeat(Math.max(0, task.estimated - (task.completed || 0)));
+
+                rpgDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-1 ${task.isCompleted ? 'line-through opacity-60' : ''}">
+                            <span>${isActive ? '▶' : '・'}</span>
+                            <span class="truncate max-w-[120px]">${task.title}</span>
+                        </div>
+                        <button onclick="deleteTask('${task.id}', event)" class="text-red-400 hover:text-red-600 px-1">✕</button>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] ${isActive ? 'text-gray-800' : 'text-gray-400'}">
+                        <span>進捗: ${task.completed}/${task.estimated}</span>
+                        <span class="text-xs">${tomats}</span>
+                    </div>
+                `;
+                rpgContainer.appendChild(rpgDiv);
+
+                // Minimal Item HTML
+                const minDiv = document.createElement('div');
+                minDiv.className = `p-3 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between ${
+                    isActive 
+                        ? 'bg-orange-500/10 border-orange-500/40 shadow-lg shadow-orange-500/5' 
+                        : 'bg-white/5 border-white/5 hover:border-white/15'
+                }`;
+                minDiv.onclick = () => selectTask(task.id);
+
+                minDiv.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <input type="checkbox" ${task.isCompleted ? 'checked' : ''} onclick="toggleTaskComplete('${task.id}', event)" class="w-4 h-4 rounded accent-orange-500 cursor-pointer">
+                        <div class="truncate">
+                            <div class="text-xs font-medium text-white truncate ${task.isCompleted ? 'line-through opacity-50' : ''}">${task.title}</div>
+                            <div class="text-[10px] text-gray-400 mt-0.5">${task.completed}/${task.estimated} Pomodoros completed</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteTask('${task.id}', event)" class="text-gray-500 hover:text-red-400 text-xs px-1.5 transition-colors">✕</button>
+                `;
+                minContainer.appendChild(minDiv);
+            });
+        }
+
+        function updateStatsDisplay() {
+            document.querySelectorAll('.todayPomodoroCountDisplay').forEach(el => el.innerText = `🍅 x ${state.totalPomodoros}`);
+            document.querySelectorAll('.totalPomodoroCountDisplay').forEach(el => el.innerText = state.totalPomodoros);
+            
+            const level = Math.floor(state.totalPomodoros / 4) + 1;
+            document.querySelectorAll('.userLevelDisplay').forEach(el => el.innerText = level);
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const btn = document.getElementById('soundToggleBtn');
+            btn.innerText = state.soundEnabled ? "🔊 おと: ON" : "🔇 おと: OFF";
+        }
+
+        function exportData() {
+            playSound('click');
+            const exportPayload = {
+                guestId: state.guestId,
+                exportedAt: new Date().toISOString(),
+                tasks: state.tasks,
+                sessions: state.sessions
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `pomodoro_backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            updateMessage(`データ を JSONファイル として エクスポート した！`);
+        }
+
+        window.onload = function() {
+            initGuestUser();
+
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        };
+    </script>
+</body>
+</html>

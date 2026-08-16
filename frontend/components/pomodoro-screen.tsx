@@ -1,13 +1,11 @@
 "use client";
 
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeWrapper } from "@/components/theme-wrapper";
 
+/**
+ * タイマー画面本体 (テーマ切替アニメーション部分のみ)。ヘッダー・ナビ・フッターは
+ * 全ルート共通の AppShell (app/layout.tsx) 側が担う。
+ */
 export function PomodoroScreen() {
-  return (
-    <div className="relative flex min-h-screen w-full flex-1 flex-col items-center">
-      <ThemeToggle />
-      <ThemeWrapper />
-    </div>
-  );
+  return <ThemeWrapper />;
 }

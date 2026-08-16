@@ -1,55 +1,78 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
 
+import { playClickSound } from "@/lib/sound";
+import { DQ_BOX_SM } from "@/lib/style-tokens";
 import { cn } from "@/lib/utils";
-import type { TaskRead } from "@/lib/api";
-
-type Command = "start" | "task" | "flee";
-
-const COMMAND_LABELS: Record<Command, string> = {
-  start: "たたかう",
-  task: "じゅもん",
-  flee: "にげる",
-};
 
 type CommandWindowProps = {
+  /** 「たたかう」を押せるか (phase !== "running")。 */
   canStart: boolean;
+  /** 「ぼうぎょ」を押せるか (phase === "running")。 */
+  canPause: boolean;
+  /** 「にげる」を押せるか (phase !== "idle")。 */
   canFlee: boolean;
-  tasks: TaskRead[];
-  activeTaskId: string | null;
   onStart: () => void;
+  onPause: () => void;
   onFlee: () => void;
-  onSelectTask: (taskId: string | null) => void;
+  onSkip: () => void;
+};
+
+type CommandDef = {
+  key: string;
+  label: string;
+  description: string;
+  disabled: boolean;
+  onClick: () => void;
 };
 
 export function CommandWindow({
   canStart,
+  canPause,
   canFlee,
-  tasks,
-  activeTaskId,
   onStart,
+  onPause,
   onFlee,
-  onSelectTask,
+  onSkip,
 }: CommandWindowProps) {
   const shouldReduceMotion = useReducedMotion();
-  const [isTaskListOpen, setIsTaskListOpen] = useState(false);
-  const [cursor, setCursor] = useState<Command>("start");
 
-  const commands: Command[] = ["start", "task", "flee"];
-
-  function runCommand(command: Command): void {
-    setCursor(command);
-    if (command === "start") {
-      if (canStart) onStart();
-    } else if (command === "task") {
-      setIsTaskListOpen((open) => !open);
-    } else {
-      if (canFlee) onFlee();
-      setIsTaskListOpen(false);
-    }
+  function run(action: () => void): void {
+    playClickSound();
+    action();
   }
+
+  const commands: CommandDef[] = [
+    {
+      key: "start",
+      label: "たたかう",
+      description: "タイマー かいし",
+      disabled: !canStart,
+      onClick: () => run(onStart),
+    },
+    {
+      key: "pause",
+      label: "ぼうぎょ",
+      description: "いちじ ていし",
+      disabled: !canPause,
+      onClick: () => run(onPause),
+    },
+    {
+      key: "flee",
+      label: "にげる",
+      description: "リセット",
+      disabled: !canFlee,
+      onClick: () => run(onFlee),
+    },
+    {
+      key: "skip",
+      label: "じゅもん",
+      description: "スキップ",
+      disabled: false,
+      onClick: () => run(onSkip),
+    },
+  ];
 
   return (
     <motion.div
@@ -57,74 +80,30 @@ export function CommandWindow({
       animate={{ scaleY: 1 }}
       transition={{ duration: shouldReduceMotion ? 0 : 0.12, ease: "linear" }}
       style={{ transformOrigin: "top" }}
-      className="w-full max-w-sm border-2 border-white bg-black p-3 text-white"
+      className="grid w-full grid-cols-2 gap-4 text-left"
     >
-      <ul className="space-y-1">
-        {commands.map((command) => {
-          const disabled = (command === "start" && !canStart) || (command === "flee" && !canFlee);
-          return (
-            <li key={command}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => runCommand(command)}
-                className="flex w-full items-center gap-2 px-1 text-left text-lg disabled:opacity-40"
-              >
-                <span className="inline-block w-3">
-                  {cursor === command && (
-                    <motion.span
-                      animate={shouldReduceMotion ? { opacity: 1 } : { opacity: [1, 0, 1] }}
-                      transition={{
-                        duration: 0.6,
-                        repeat: shouldReduceMotion ? 0 : Infinity,
-                        ease: "linear",
-                      }}
-                    >
-                      {"▶"}
-                    </motion.span>
-                  )}
-                </span>
-                {COMMAND_LABELS[command]}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      {isTaskListOpen && (
-        <div className="mt-2 border-t-2 border-white pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              onSelectTask(null);
-              setIsTaskListOpen(false);
-            }}
-            className={cn(
-              "block w-full px-1 py-0.5 text-left",
-              activeTaskId === null && "bg-white text-black",
-            )}
-          >
-            (たいしょうタスクなし)
-          </button>
-          {tasks.length === 0 && <p className="px-1 py-0.5 text-white/60">クエストが ありません。</p>}
-          {tasks.map((task) => (
-            <button
-              key={task.id}
-              type="button"
-              onClick={() => {
-                onSelectTask(task.id);
-                setIsTaskListOpen(false);
-              }}
-              className={cn(
-                "block w-full px-1 py-0.5 text-left",
-                activeTaskId === task.id && "bg-white text-black",
-              )}
-            >
-              {task.title}
-            </button>
-          ))}
-        </div>
-      )}
+      {commands.map((command) => (
+        <button
+          key={command.key}
+          type="button"
+          disabled={command.disabled}
+          onClick={command.onClick}
+          className={cn(
+            DQ_BOX_SM,
+            "group flex items-center gap-2 p-3 text-white transition-colors hover:bg-white hover:text-black disabled:pointer-events-none disabled:opacity-40",
+          )}
+        >
+          <span className="w-3 shrink-0 text-yellow-400 opacity-0 group-hover:opacity-100 group-hover:text-black">
+            {"▶"}
+          </span>
+          <span>
+            <span className="block text-base font-bold">{command.label}</span>
+            <span className="block text-xs text-gray-400 group-hover:text-gray-800">
+              {command.description}
+            </span>
+          </span>
+        </button>
+      ))}
     </motion.div>
   );
 }

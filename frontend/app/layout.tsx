@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DotGothic16, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
 
 const geistSans = Geist({
@@ -33,7 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${dotGothic16.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          <AppShell>{children}</AppShell>
+        </Providers>
       </body>
     </html>
   );

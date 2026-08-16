@@ -11,10 +11,11 @@ import {
 } from "react";
 
 import { createSession, type SessionCreate } from "@/lib/api";
-import { notifyTaskSessionRecorded } from "@/lib/session-events";
-import { durationMsFor, nextSessionType, type SessionType } from "@/lib/timer";
+import { notifySessionRecorded, notifyTaskSessionRecorded } from "@/lib/session-events";
+import { playCompleteFanfare } from "@/lib/sound";
+import { durationMsFor, nextSessionType, type SessionType, type TimerPhase } from "@/lib/timer";
 
-export type TimerPhase = "idle" | "running" | "paused";
+export type { TimerPhase } from "@/lib/timer";
 
 type PersistedTimer = {
   phase: TimerPhase;
@@ -145,6 +146,7 @@ function recordSession(
   };
   createSession(payload)
     .then(() => {
+      notifySessionRecorded();
       if (taskId) notifyTaskSessionRecorded(taskId);
     })
     .catch(() => {
@@ -192,12 +194,46 @@ function switchActiveTask(taskId: string | null): void {
   setTimerState((prev) => (prev.phase !== "idle" ? prev : { ...prev, activeTaskId: taskId }));
 }
 
+/**
+ * フェーズを問わず呼べる。実行中のセッションを記録せずに打ち切り、次のセッション種別へ進める。
+ * checkNaturalCompletionと違い、recordSessionは呼ばずcompletedWorkCountも増やさない。
+ */
+function skipSession(): void {
+  setTimerState((prev) => {
+    // nextSessionTypeは「今回完了分を含む通算WORK完了数」を期待する (0は未完了扱いでLONG_BREAK
+    // 判定に誤って一致してしまうため、completedWorkCount=0の場合は1として扱う)。
+    const nextType = nextSessionType(prev.sessionType, prev.completedWorkCount || 1);
+    const totalMs = durationMsFor(nextType);
+
+    return {
+      phase: "idle",
+      sessionType: nextType,
+      activeTaskId: prev.activeTaskId,
+      totalMs,
+      endsAt: null,
+      remainingMs: totalMs,
+      startedAt: null,
+      completedWorkCount: prev.completedWorkCount,
+    };
+  });
+}
+
+/** phase === "idle" のときだけ有効。実行中は無視する (mockのsetTimerModeに相当)。 */
+function setSessionTypeState(type: SessionType): void {
+  setTimerState((prev) => {
+    if (prev.phase !== "idle") return prev;
+    const totalMs = durationMsFor(type);
+    return { ...prev, sessionType: type, totalMs, remainingMs: totalMs };
+  });
+}
+
 /** running中にendsAtを過ぎていたら完了処理をして次のセッションへ進める。tickごとに呼ばれる。 */
 function checkNaturalCompletion(): void {
   setTimerState((prev) => {
     if (prev.phase !== "running" || prev.endsAt === null || Date.now() < prev.endsAt) return prev;
 
     recordSession(prev, "COMPLETED", prev.endsAt);
+    if (prev.sessionType === "WORK") playCompleteFanfare();
 
     const completedWorkCount =
       prev.sessionType === "WORK" ? prev.completedWorkCount + 1 : prev.completedWorkCount;
@@ -243,6 +279,8 @@ type TimerStateValue = {
   start: () => void;
   pause: () => void;
   reset: () => void;
+  skip: () => void;
+  setSessionType: (type: SessionType) => void;
   switchTask: (taskId: string | null) => void;
 };
 
@@ -273,6 +311,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       start: startSession,
       pause: pauseSession,
       reset: resetSession,
+      skip: skipSession,
+      setSessionType: setSessionTypeState,
       switchTask: switchActiveTask,
     }),
     [state],
