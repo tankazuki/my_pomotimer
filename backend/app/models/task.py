@@ -1,12 +1,14 @@
 """タスクモデル。"""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Uuid
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.models.tag import Tag
+from app.models.task_tag import task_tags
 
 
 class Task(Base):
@@ -27,6 +29,7 @@ class Task(Base):
     estimated_pomodoros: Mapped[int] = mapped_column(Integer, nullable=False)
     completed_pomodoros: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
@@ -35,3 +38,4 @@ class Task(Base):
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
+    tags: Mapped[list[Tag]] = relationship(secondary=task_tags, lazy="selectin")

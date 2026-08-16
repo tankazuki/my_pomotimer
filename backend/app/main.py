@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import export, guest, health, sessions, tasks
+from app.api import export, guest, health, sessions, stats, tags, tasks
 from app.config import get_settings
 
 settings = get_settings()
@@ -23,5 +23,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(guest.router)
 app.include_router(tasks.router)
+app.include_router(tags.router)
 app.include_router(sessions.router)
+app.include_router(stats.router)
 app.include_router(export.router)

@@ -9,7 +9,9 @@ def test_export_contains_all_tables_and_download_header(
     client: TestClient, guest_headers: dict[str, str]
 ) -> None:
     task = client.post(
-        "/api/tasks", json={"title": "Exported task"}, headers=guest_headers
+        "/api/tasks",
+        json={"title": "Exported task", "tags": ["export-tag"]},
+        headers=guest_headers,
     ).json()
     started_at = datetime.now(UTC)
     ended_at = started_at + timedelta(minutes=25)
@@ -33,8 +35,11 @@ def test_export_contains_all_tables_and_download_header(
     assert "pomodoro-export-" in response.headers["content-disposition"]
 
     body = response.json()
-    assert body["schema_version"] == 1
+    assert body["schema_version"] == 2
     assert body["guest_profile"]["id"] == guest_headers["X-Guest-ID"]
     assert len(body["tasks"]) == 1
     assert body["tasks"][0]["id"] == task["id"]
+    assert body["tasks"][0]["tags"][0]["name"] == "export-tag"
     assert len(body["sessions"]) == 1
+    assert len(body["tags"]) == 1
+    assert body["tags"][0]["name"] == "export-tag"

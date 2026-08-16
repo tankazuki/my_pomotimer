@@ -20,8 +20,11 @@ def list_tasks(
     db: Annotated[Session, Depends(get_db)],
     guest: Annotated[GuestProfile, Depends(get_guest)],
     include_completed: bool = True,
+    tag_id: uuid.UUID | None = None,
 ) -> list[TaskRead]:
-    tasks = task_service.list_tasks(db, guest.id, include_completed=include_completed)
+    tasks = task_service.list_tasks(
+        db, guest.id, include_completed=include_completed, tag_id=tag_id
+    )
     return [TaskRead.model_validate(task) for task in tasks]
 
 
