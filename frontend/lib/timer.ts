@@ -55,8 +55,8 @@ export const SESSION_TYPE_LABEL_JA: Record<SessionType, string> = {
 };
 
 /**
- * タイマーの状態に応じたメッセージ文言を返す。RPGテーマ (タイプライター表示) と
- * ミニマルテーマ (即時表示) の両方から参照される共通ロジック。
+ * タイマーの状態に応じたメッセージ文言を返す。RPGテーマのドット絵風メッセージウィンドウ
+ * (タイプライター表示) 専用。ひらがな中心のDQ風表記は意図的な演出なので変更しないこと。
  */
 export function computeTimerMessage(
   phase: TimerPhase,
@@ -74,4 +74,33 @@ export function computeTimerMessage(
   return sessionType === "WORK"
     ? "「たたかう」で しゅうちゅうを はじめよう。"
     : `「たたかう」で ${SESSION_TYPE_LABEL_JA[sessionType]}に はいろう。`;
+}
+
+/** ミニマルテーマ用のセッション種別表示 (通常の漢字表記)。 */
+export const MINIMAL_SESSION_TYPE_LABEL: Record<SessionType, string> = {
+  WORK: "集中",
+  SHORT_BREAK: "休憩",
+  LONG_BREAK: "長い休憩",
+};
+
+/**
+ * ミニマルテーマのステータス通知パネル用メッセージ。RPGテーマの「たたかう」等の
+ * コマンド名には依存せず、実際のボタン名 (開始/一時停止) に沿った表記にする。
+ */
+export function computeMinimalTimerMessage(
+  phase: TimerPhase,
+  sessionType: SessionType,
+  activeTaskTitle: string | null,
+): string {
+  if (phase === "running") {
+    return sessionType === "WORK"
+      ? `${activeTaskTitle ?? "タスク"}に集中しています...`
+      : `${MINIMAL_SESSION_TYPE_LABEL[sessionType]}中です...`;
+  }
+  if (phase === "paused") {
+    return "一時停止中です。「開始」で再開できます。";
+  }
+  return sessionType === "WORK"
+    ? "「開始」で集中を始めましょう。"
+    : `「開始」で${MINIMAL_SESSION_TYPE_LABEL[sessionType]}に入りましょう。`;
 }

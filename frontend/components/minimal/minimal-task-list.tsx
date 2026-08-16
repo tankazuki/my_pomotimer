@@ -76,7 +76,7 @@ export function MinimalTaskList({
         />
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
-            <span className="text-xs text-gray-400">{"よそう 🍅:"}</span>
+            <span className="text-xs text-gray-400">{"予想 🍅:"}</span>
             <input
               type="number"
               min={1}
@@ -86,7 +86,7 @@ export function MinimalTaskList({
               className="w-8 bg-transparent text-center text-xs text-white focus:outline-none"
             />
           </div>
-          <DueDateField value={dueDate} onChange={setDueDate} variant="minimal" />
+          <DueDateField value={dueDate} onChange={setDueDate} variant="minimal" label="期限" />
         </div>
         <TagInput value={tags} onChange={setTags} variant="minimal" />
         <button

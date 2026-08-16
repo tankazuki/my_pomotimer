@@ -129,17 +129,23 @@ function ensureHydrated(): void {
   }
 }
 
+/**
+ * @param elapsedRunningMs 実際に「実行中 (running)」だった合計時間 (ms)。一時停止していた
+ *   時間は含まない。未指定 (自然完了時) は totalMs 全体を消化したとみなす。
+ */
 function recordSession(
   endedState: PersistedTimer,
   status: "COMPLETED" | "INTERRUPTED",
   endedAtMs: number,
+  elapsedRunningMs: number = endedState.totalMs,
 ): void {
   if (!endedState.startedAt) return;
   const taskId = endedState.sessionType === "WORK" ? endedState.activeTaskId : null;
   const payload: SessionCreate = {
     task_id: taskId,
     session_type: endedState.sessionType,
-    duration_minutes: Math.round(endedState.totalMs / 60_000),
+    // 中断が短時間でも0分にはならないよう、最低1分は記録する (バックエンドは ge=1 必須)。
+    duration_minutes: Math.max(1, Math.round(elapsedRunningMs / 60_000)),
     status,
     started_at: endedState.startedAt,
     ended_at: new Date(endedAtMs).toISOString(),
@@ -183,15 +189,24 @@ function resetSession(): void {
     if (prev.phase === "idle") return prev;
     const endedAtMs =
       prev.phase === "running" && prev.endsAt !== null ? Math.min(Date.now(), prev.endsAt) : Date.now();
-    recordSession(prev, "INTERRUPTED", endedAtMs);
+
+    // 一時停止中に消費した時間を除いた、実際に「実行中」だった時間だけを記録する。
+    const remainingMsAtReset =
+      prev.phase === "running" && prev.endsAt !== null
+        ? Math.max(0, prev.endsAt - Date.now())
+        : prev.remainingMs;
+    const elapsedRunningMs = Math.max(0, prev.totalMs - remainingMsAtReset);
+
+    recordSession(prev, "INTERRUPTED", endedAtMs, elapsedRunningMs);
 
     const totalMs = durationMsFor(prev.sessionType);
     return { ...prev, phase: "idle", totalMs, endsAt: null, remainingMs: totalMs, startedAt: null };
   });
 }
 
+/** フェーズを問わず呼べる。実行中/一時停止中でも対象タスクを切り替えられる。 */
 function switchActiveTask(taskId: string | null): void {
-  setTimerState((prev) => (prev.phase !== "idle" ? prev : { ...prev, activeTaskId: taskId }));
+  setTimerState((prev) => (prev.activeTaskId === taskId ? prev : { ...prev, activeTaskId: taskId }));
 }
 
 /**

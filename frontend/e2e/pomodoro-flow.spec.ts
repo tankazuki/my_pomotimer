@@ -22,7 +22,7 @@ test("タスク作成→タイマー開始→テーマ切替→完了でcomplete
   await taskRow.getByRole("button", { name: taskTitle, exact: true }).click();
 
   await page.getByRole("button", { name: "開始" }).click();
-  await expect(page.getByText(`しゅうちゅう ・ ${taskTitle}`)).toBeVisible();
+  await expect(page.getByText(`集中 ・ ${taskTitle}`)).toBeVisible();
 
   await page.getByRole("button", { name: "RPG表示へ" }).click();
   await expect(page.getByText(`${taskTitle} に しゅうちゅうしている...`)).toBeVisible();

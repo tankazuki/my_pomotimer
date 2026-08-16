@@ -13,18 +13,18 @@ import { computeRemainingMs, useTimerState, useTimerTick } from "@/hooks/use-tim
 import { playClickSound } from "@/lib/sound";
 import { GLASS_CARD } from "@/lib/style-tokens";
 import {
-  computeTimerMessage,
+  computeMinimalTimerMessage,
+  MINIMAL_SESSION_TYPE_LABEL,
   progressRatio,
   SESSION_DURATION_MINUTES,
-  SESSION_TYPE_LABEL_JA,
   type SessionType,
 } from "@/lib/timer";
 import { cn } from "@/lib/utils";
 
 const SESSION_TYPE_OPTIONS: { type: SessionType; label: string }[] = [
-  { type: "WORK", label: `しゅうちゅう (${SESSION_DURATION_MINUTES.WORK}ふん)` },
-  { type: "SHORT_BREAK", label: `きゅうけい (${SESSION_DURATION_MINUTES.SHORT_BREAK}ふん)` },
-  { type: "LONG_BREAK", label: `ながいきゅうけい (${SESSION_DURATION_MINUTES.LONG_BREAK}ふん)` },
+  { type: "WORK", label: `集中 (${SESSION_DURATION_MINUTES.WORK}分)` },
+  { type: "SHORT_BREAK", label: `休憩 (${SESSION_DURATION_MINUTES.SHORT_BREAK}分)` },
+  { type: "LONG_BREAK", label: `長い休憩 (${SESSION_DURATION_MINUTES.LONG_BREAK}分)` },
 ];
 
 export function MinimalView() {
@@ -45,7 +45,7 @@ export function MinimalView() {
   const level = Math.floor(totalCount / 4) + 1;
 
   const message = useMemo(
-    () => computeTimerMessage(timer.phase, timer.sessionType, activeTask?.title ?? null),
+    () => computeMinimalTimerMessage(timer.phase, timer.sessionType, activeTask?.title ?? null),
     [timer.phase, timer.sessionType, activeTask],
   );
 
@@ -177,7 +177,7 @@ export function MinimalView() {
               <AnimatedTime remainingMs={remainingMs} />
             </CircularProgress>
             <span className="text-xs font-semibold tracking-widest text-orange-400 uppercase">
-              {SESSION_TYPE_LABEL_JA[timer.sessionType]}
+              {MINIMAL_SESSION_TYPE_LABEL[timer.sessionType]}
               {activeTask && timer.sessionType === "WORK" ? ` ・ ${activeTask.title}` : ""}
             </span>
           </div>
@@ -192,7 +192,7 @@ export function MinimalView() {
                 className="gap-2 h-auto rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-500/20 hover:from-orange-400 hover:to-amber-400 hover:shadow-orange-500/40"
               >
                 <Pause />
-                いちじていし
+                一時停止
               </Button>
             ) : (
               <Button
@@ -203,7 +203,7 @@ export function MinimalView() {
                 className="gap-2 h-auto rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-500/20 hover:from-orange-400 hover:to-amber-400 hover:shadow-orange-500/40"
               >
                 <Play />
-                かいし
+                開始
               </Button>
             )}
             <Button
@@ -234,7 +234,7 @@ export function MinimalView() {
           <div className="z-10 mt-6 grid w-full grid-cols-2 gap-4 border-t border-white/5 pt-6 md:grid-cols-3">
             <div className="rounded-xl border border-white/5 bg-white/5 p-3.5 text-center">
               <div className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
-                きょうのポモドーロ
+                今日のポモドーロ
               </div>
               <div className="mt-1 text-xl font-bold text-orange-400">
                 {"🍅 x "}
@@ -243,7 +243,7 @@ export function MinimalView() {
             </div>
             <div className="rounded-xl border border-white/5 bg-white/5 p-3.5 text-center">
               <div className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
-                るいけいかんりょう
+                累計完了数
               </div>
               <div className="mt-1 text-xl font-bold text-white">{totalCount}</div>
             </div>

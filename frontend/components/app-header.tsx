@@ -51,7 +51,13 @@ export function AppHeader() {
               : cn(GLASS_BUTTON, "text-gray-300 hover:text-white"),
           )}
         >
-          {soundEnabled ? "🔊 おと: ON" : "🔇 おと: OFF"}
+          {isRpg
+            ? soundEnabled
+              ? "🔊 おと: ON"
+              : "🔇 おと: OFF"
+            : soundEnabled
+              ? "🔊 音: ON"
+              : "🔇 音: OFF"}
         </button>
 
         <button
@@ -64,7 +70,7 @@ export function AppHeader() {
               : cn(GLASS_BUTTON, "text-gray-300 hover:text-white"),
           )}
         >
-          {"💾 データをほぞん"}
+          {isRpg ? "💾 データをほぞん" : "💾 データを保存"}
         </button>
 
         <button
